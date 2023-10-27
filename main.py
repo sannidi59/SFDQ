@@ -1,16 +1,34 @@
-# This is a sample Python script.
+from logger_setup import setup_logger
+from data_quality_framework.connection_manager import ConnectionManager
+from data_quality_framework.query_manager import QueryManager
 
-# Press Shift+F10 to execute it or replace it with your code.
-# Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
+def main():
+    # Initialize logging
+    setup_logger(log_level="INFO", log_file="dqf_log.txt")
 
+    # Create an instance of the ConnectionManager
+    conn_manager = ConnectionManager()
 
-def print_hi(name):
-    # Use a breakpoint in the code line below to debug your script.
-    print(f'Hi, {name}')  # Press Ctrl+F8 to toggle the breakpoint.
+    # Establish connections to Snowflake and MySQL
+    sf_conn = conn_manager.get_snowflake_connection()
+    mysql_conn = conn_manager.get_mysql_connection()
 
+    # Create an instance of the QueryManager with established connections
+    query_manager = QueryManager(sf_conn=sf_conn, mysql_conn=mysql_conn)
 
-# Press the green button in the gutter to run the script.
-if __name__ == '__main__':
-    print_hi('PyCharm')
+    # Fetch DDL for 'customer' table from both databases
+    sf_customer_ddl = query_manager.fetch_ddl_from_snowflake(table_name="customer")
+    mysql_customer_ddl = query_manager.fetch_ddl_from_mysql(table_name="customer")
 
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
+    # Compare the DDLs
+    if sf_customer_ddl == mysql_customer_ddl:
+        print("DDLs for the 'customer' table in Snowflake and MySQL match!")
+    else:
+        print("DDLs for the 'customer' table in Snowflake and MySQL differ!")
+
+    # Close the database connections
+    sf_conn.close()
+    mysql_conn.close()
+
+if __name__ == "__main__":
+    main()
